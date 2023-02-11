@@ -1,3 +1,5 @@
+flask-restful
+flask
 numpy
 torch
 torchaudio
