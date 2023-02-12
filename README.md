@@ -13,8 +13,8 @@ For any other documentation refer to [WhisperX readme](https://github.com/m-bain
 - In order to not spend resources on loading the model - we load it once (lazily) and reuse it afterwards. As a result - the model type and size is specified via the environment variable WHISPER_MODEL.
 - The server will only process one video at a time and reject incoming requests while processing is taking place. We can change this to a queue like behaviour in the future.
 - The correct Python version to run this is 3.8. Avoid unpleasantness by sticking to 3.8.
-- I've pushed the repo to GitHub and added a bit of documentation (which should grow as we add behaviours).
-- Run the Server by calling `run.sh`.
+- Note that Python 3.8 should be used to install dependecies (pip with Python 3.8 was used succesfully)
+- After installing the pre-requirsites as indicated in the WhisperX repository, run the Server by executing the script `run.sh`, or by calling `/usr/bin/python3.8 -m flask run`.
 - For convenience sake - here's a curl command to trigger the endopint:
 ```
 curl -X POST http://<machine_IP>:5000/transcribe \
