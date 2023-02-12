@@ -1,5 +1,5 @@
 whisperx.egg-info/
 **/__pycache__/
-
-/samples/*
-commands.sh
+examples/sample_file.mp4
+examples/subtitles.srt
+examples/transcript.txt

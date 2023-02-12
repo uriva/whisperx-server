@@ -14,6 +14,7 @@ from .tokenizer import LANGUAGES, TO_LANGUAGE_CODE, get_tokenizer
 from .utils import exact_div, format_timestamp, optional_int, optional_float, str2bool, interpolate_nans, write_txt, write_vtt, write_srt, write_ass, write_tsv
 from .vad import Binarize
 import pandas as pd
+import logging
 
 if TYPE_CHECKING:
     from .model import Whisper
@@ -758,5 +759,53 @@ def cli():
             exp_fp = os.path.join(output_dir, audio_basename + ".sad")
             wrd_segs = pd.concat([x["word-segments"] for x in result_aligned["segments"]])[['start','end']]
             wrd_segs.to_csv(exp_fp, sep='\t', header=None, index=False)
+
+
 if __name__ == "__main__":
     cli()
+
+
+
+def work_on_file(model, audio_path, output_dir):
+    logging.info(f"Transcribing {audio_path}...")
+    args = {"language": None, "task": "transcribe", "verbose": False}
+    result = transcribe(model, audio_path, temperature=[0], **args)
+
+    lan = result["language"]
+    logging.info(f"Language of {audio_path} is {lan}")
+
+    logging.info(f"Alligning {audio_path}...")
+    device: str = "cuda"
+    align_model, align_metadata = load_align_model(lan, device)
+    result_aligned = align(result["segments"], align_model, align_metadata, audio_path, device,
+                            extend_duration=2, start_from_previous=True, interpolate_method="nearest")
+
+    # Diarization
+    # logging.info("Performing diarization...")
+    # hf_token: str = os.environ.get('HF_TOKEN')
+    # if hf_token is None:
+    #     logging.info("Warning, no huggingface token used, needs to be saved in environment variable HF_TOKEN, otherwise will throw error loading VAD model...")
+    # diarize_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
+    #                             use_auth_token=hf_token)
+    # diarize_segments = diarize_pipeline(audio_path)
+    # diarize_df = pd.DataFrame(diarize_segments.itertracks(yield_label=True))
+    # diarize_df['start'] = diarize_df[0].apply(lambda x: x.start)
+    # diarize_df['end'] = diarize_df[0].apply(lambda x: x.end)
+    # # assumes each utterance is single speaker (needs fix)
+    # result_segments, word_segments = assign_word_speakers(diarize_df, result_aligned["segments"], fill_nearest=True)
+    # result_aligned["segments"] = result_segments
+    # result_aligned["word_segments"] = word_segments
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # save TXT
+    with open(os.path.join(output_dir, "transcript.txt"), "w", encoding="utf-8") as txt:
+        write_txt(result_aligned["segments"], file=txt)
+
+    # save SRT
+    with open(os.path.join(output_dir,  "subtitles.srt"), "w", encoding="utf-8") as srt:
+        write_srt(result_aligned["segments"], file=srt)
+
+format = "%(asctime)s: %(message)s"
+logging.basicConfig(format=format, level=logging.INFO,
+                    datefmt="%H:%M:%S")
