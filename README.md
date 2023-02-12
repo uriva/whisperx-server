@@ -14,6 +14,7 @@ For any other documentation refer to [WhisperX readme](https://github.com/m-bain
 - The server will only process one video at a time and reject incoming requests while processing is taking place. We can change this to a queue like behaviour in the future.
 - The correct Python version to run this is 3.8. Avoid unpleasantness by sticking to 3.8.
 - I've pushed the repo to GitHub and added a bit of documentation (which should grow as we add behaviours).
+- Run the Server by calling `run.sh`.
 - For convenience sake - here's a curl command to trigger the endopint:
 ```
 curl -X POST http://<machine_IP>:5000/transcribe \
