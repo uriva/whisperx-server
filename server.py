@@ -19,34 +19,34 @@ class TranscribeHandler(Resource):
         global model
         transcriptionRequest = request.json
 
-        pathToFile = transcriptionRequest.get('pathToFile')
-        outputPath = transcriptionRequest.get('outputPath')
-        if pathToFile is None:
+        audio_path = transcriptionRequest.get('audioPath')
+        output_dir = transcriptionRequest.get('outputDir')
+        if audio_path is None:
             return {
-                'message': "'pathToFile' key is missing"
+                'message': "'audioPath' key is missing"
             }, 400        
 
-        if str(pathToFile) == False:
+        if str(audio_path) == False:
             return {
                 'message': "'pathToFile' value is not a string"
             }, 400
 
-        if os.path.isfile(pathToFile) == False:
+        if os.path.isfile(audio_path) == False:
             return {
-                'message': f"the file at path '{pathToFile}' was not found"
+                'message': f"the file at path '{audio_path}' was not found"
             }, 404
 
-        if outputPath is None:
-            outputPath = os.path.dirname(os.path.abspath(pathToFile))
+        if output_dir is None:
+            output_dir = os.path.dirname(os.path.abspath(audio_path))
 
-        logging.info(f"request received [{pathToFile} -> {outputPath}]")
+        logging.info(f"request received [{audio_path} -> {output_dir}]")
 
         if worker.isBusy():
             return {
                 'message': f"a video is currently being processed, try again later"
             }, 529
 
-        transcribe_thread = threading.Thread(target=worker.work, name="Transcriber Function", args=[pathToFile, outputPath])
+        transcribe_thread = threading.Thread(target=worker.work, name="Transcriber Function", args=[audio_path, output_dir])
         transcribe_thread.start()
 
         return {}, 200

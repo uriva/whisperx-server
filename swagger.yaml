@@ -3,13 +3,13 @@ info:
   title: Transcription Service
   description: |-
     This is a Python server Application that transcribes media files.
+
     The service recieves requests to transcribe file through the endpoint '/transcribe'.
     Once a request was received, the server will start the transcription work and post the result to the indicated place when finished.
     This service will only process one file at a time and will additional requests while processing is ongoing.
 
     Some useful links:
     - [Whisperx](https://github.com/m-bain/whisperX) used for generating the transcriptions.
-    - [FastAPI](https://fastapi.tiangolo.com/) used for implementing the server.
   version: 1.0.0
 paths:
   /transcribe:
@@ -37,23 +37,15 @@ components:
   schemas:
     TranscriptionRequest:
       type: object
-      required: [ pathToFile ]
+      required: [ audioPath ]
       properties:
-        pathToFile:
+        audioPath:
           type: string
           description: The path to the file for the transcription.
           format: filename
           example: 'videos/2022-02-28/abcd-edfh.mk4'
-        outputPath:
+        outputDir:
           type: string
           description: The path to which the server should place the transcription. If not provided the output will be put in the same directory as the source file.
           format: directory
           example: 'videos/2022-02-28'
-        modelSize:
-          type: string
-          description: The type of model that should be used for the transcription. Larger models produce more accurate transcriptions, but require more processing time. If this value is not provided the large model will be used.
-          enum:
-            - small
-            - medium
-            - large
-            - large-v2
