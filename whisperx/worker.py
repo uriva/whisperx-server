@@ -14,11 +14,11 @@ class Worker():
     _working_status = False
     _device = "cpu"
 
-    def __init__(self, modelSize, device):
-        self._model_size = modelSize
+    def __init__(self, model_size, device, torch_threads):
+        self._model_size = model_size
         self._device = device
-        if device == "cpu":
-            torch.set_num_threads(4)
+        torch.set_num_threads(torch_threads)
+        logging.info(f"initialized worker with device={device}, torch_threads={torch_threads}, model_size={model_size}")
 
     def isBusy(self):
         return self._working_status

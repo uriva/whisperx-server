@@ -57,12 +57,22 @@ format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
+device = os.environ.get('WHISPER_DEVICE')
+if device == None:
+    device = 'cpu'
+
+torch_threads = int(os.getenv('TORCH_THREADS', 1))
+if torch_threads == None:
+    torch_threads = 1
+
 modelSize = os.environ.get('WHISPER_MODEL')
 if modelSize == None:
     modelSize = 'large-v2'
 if modelSize not in ['small', 'medium', 'large', 'large-v2']:
     logging.error("invalid WHISPER_MODEL value. Must be one of ['small', 'medium', 'large', 'large-v2']")
-worker = Worker(modelSize, "cuda")
+worker = Worker(modelSize, device, torch_threads)
+
+
 
 api.add_resource(TranscribeHandler, '/transcribe')
 
