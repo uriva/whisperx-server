@@ -80,7 +80,7 @@ class Worker():
             "task": "transcribe", 
             "source": audio_path, 
             "whisper_model": self._model_size, 
-            "duration": round(end - start)
+            "duration": f"{round(end - start)} seconds"
             }
         with open(os.path.join(output_dir,  "transcription_metadata.json"), "w", encoding="utf-8") as fd:
             json.dump(metadata, fd)
