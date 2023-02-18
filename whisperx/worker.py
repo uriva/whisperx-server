@@ -7,6 +7,7 @@ import time
 import os
 import torch
 import json
+from datetime import datetime
 
 
 class Worker():
@@ -75,12 +76,16 @@ class Worker():
         end = time.time()
         logging.info(f"Finished processing {audio_path} within {round(end - start)} seconds (model: {self._model_size})")
 
+        now = datetime.now() # current date and time
+        date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+
         metadata = {
             "language": lan, 
             "task": "transcribe", 
             "source": audio_path, 
             "whisper_model": self._model_size, 
-            "duration": f"{round(end - start)} seconds"
+            "duration": f"{round(end - start)} seconds",
+            "finished_at": date_time,
             }
         with open(os.path.join(output_dir,  "transcription_metadata.json"), "w", encoding="utf-8") as fd:
             json.dump(metadata, fd)
