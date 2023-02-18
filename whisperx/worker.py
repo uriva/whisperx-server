@@ -1,16 +1,24 @@
 import logging
 from . import load_model
-from .transcribe import work_on_file
+from .transcribe import transcribe
+from .alignment import load_align_model, align
+from .utils import write_txt, write_srt
 import time
+import os
 import torch
+import json
 
 
 class Worker():
     _model = None
     _working_status = False
+    _device = "cpu"
 
-    def __init__(self, modelSize):
+    def __init__(self, modelSize, device):
         self._model_size = modelSize
+        self._device = device
+        if device == "cpu":
+            torch.set_num_threads(4)
 
     def isBusy(self):
         return self._working_status
@@ -24,13 +32,59 @@ class Worker():
         model = self.model
 
         ######## REAL WORK IS BEING DONE HERE ###########
-        start = time.time()
-        work_on_file(model, audio_path, output_dir)
-        end = time.time()
-        logging.info(f"Finished processing {audio_path} within {round(end - start)} seconds (model: {self._model_size})")
+        self.work_on_file(model, audio_path, output_dir)
         #################################################
+
         self.working_status = False
         return
+
+    def work_on_file(self, model, audio_path, output_dir):
+        logging.info(f"Transcribing {audio_path} with {self._device}...")
+        start = time.time()
+
+        args = {
+            "language": None, 
+            "task": "transcribe", 
+            "verbose": False, 
+            }
+
+        if self._device == "cpu":
+            args["fp16"] = False
+
+        result = transcribe(model, audio_path, temperature=[0], **args)
+
+        lan = result["language"]
+        logging.info(f"Language of {audio_path} is {lan}")
+
+        logging.info(f"Alligning {audio_path}...")
+        align_model, align_metadata = load_align_model(lan, self._device)
+        result_aligned = align(result["segments"], align_model, align_metadata, audio_path, self._device,
+                                extend_duration=2, start_from_previous=True, interpolate_method="nearest")
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        # save TXT
+        with open(os.path.join(output_dir, "transcript.txt"), "w", encoding="utf-8") as txt:
+            write_txt(result_aligned["segments"], file=txt)
+
+        # save SRT
+        with open(os.path.join(output_dir,  "subtitles.srt"), "w", encoding="utf-8") as srt:
+            write_srt(result_aligned["segments"], file=srt)
+
+        # save metadata JSON
+        end = time.time()
+        logging.info(f"Finished processing {audio_path} within {round(end - start)} seconds (model: {self._model_size})")
+
+        metadata = {
+            "language": lan, 
+            "task": "transcribe", 
+            "source": audio_path, 
+            "whisper_model": self._model_size, 
+            "duration": round(end - start)
+            }
+        with open(os.path.join(output_dir,  "transcription_metadata.json"), "w", encoding="utf-8") as fd:
+            json.dump(metadata, fd)
+
 
     def _get_working_status(self):
         return self._working_status
@@ -48,10 +102,25 @@ class Worker():
     def model(self):
         if not self._model:
             logging.info(f'lazy loading Whisper model... (size: {self._model_size})')
-            self._model = load_model(self._model_size, device='cuda')
+            self._model = load_model(self._model_size, device=self._device)
             logging.info("Whisper model loaded successfully!")
         return self._model
 
+        # Diarization Code:
+        # logging.info("Performing diarization...")
+        # hf_token: str = os.environ.get('HF_TOKEN')
+        # if hf_token is None:
+        #     logging.info("Warning, no huggingface token used, needs to be saved in environment variable HF_TOKEN, otherwise will throw error loading VAD model...")
+        # diarize_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
+        #                             use_auth_token=hf_token)
+        # diarize_segments = diarize_pipeline(audio_path)
+        # diarize_df = pd.DataFrame(diarize_segments.itertracks(yield_label=True))
+        # diarize_df['start'] = diarize_df[0].apply(lambda x: x.start)
+        # diarize_df['end'] = diarize_df[0].apply(lambda x: x.end)
+        # # assumes each utterance is single speaker (needs fix)
+        # result_segments, word_segments = assign_word_speakers(diarize_df, result_aligned["segments"], fill_nearest=True)
+        # result_aligned["segments"] = result_segments
+        # result_aligned["word_segments"] = word_segments
 
 format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=format, level=logging.INFO,

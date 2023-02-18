@@ -62,7 +62,11 @@ if modelSize == None:
     modelSize = 'large-v2'
 if modelSize not in ['small', 'medium', 'large', 'large-v2']:
     logging.error("invalid WHISPER_MODEL value. Must be one of ['small', 'medium', 'large', 'large-v2']")
-worker = Worker(modelSize)
+worker = Worker(modelSize, "cuda")
 
 api.add_resource(TranscribeHandler, '/transcribe')
 
+
+if __name__ == "__main__":
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)
