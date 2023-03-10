@@ -24,7 +24,7 @@ class Worker():
     def isBusy(self):
         return self._working_status
 
-    def work(self, audio_path, output_dir):
+    def work(self, audio_path, output_dir, task):
         if self.working_status:
             logging.info("Already working! sorry..")
             return
@@ -33,19 +33,19 @@ class Worker():
         model = self.model
 
         ######## REAL WORK IS BEING DONE HERE ###########
-        self.work_on_file(model, audio_path, output_dir)
+        self.work_on_file(model, audio_path, output_dir, task)
         #################################################
 
         self.working_status = False
         return
 
-    def work_on_file(self, model, audio_path, output_dir):
-        logging.info(f"Transcribing {audio_path} with {self._device}...")
+    def work_on_file(self, model, audio_path, output_dir, task):
+        logging.info(f"Will {task} {audio_path} with {self._device}...")
         start = time.time()
 
         args = {
             "language": None, 
-            "task": "transcribe", 
+            "task": str(task), 
             "verbose": False, 
             }
 

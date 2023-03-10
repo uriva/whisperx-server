@@ -16,8 +16,18 @@ For any other documentation refer to [WhisperX readme](https://github.com/m-bain
 - Note that Python 3.8 should be used to install dependecies (pip with Python 3.8 was used succesfully)
 - After installing the pre-requirsites as indicated in the WhisperX repository, run the Server by executing the script `run_gpu.sh` to execute with CUDA or `run_cpu.sh` for running on the CPU (slow).
 - For convenience sake - here's a curl command to trigger the endopint:
+
+For Transcribing a file in the original language:
 ```
 curl -X POST http://<machine_IP>:8080/transcribe \
     -H "Content-Type: application/json" \
-    -d '{"audioPath": <path_to_file>}'
+    -d '{"audioPath": "examples/sample_file.mp4"}'
 ```
+
+- In order to translate to English, add the query parameter `"task": "translate"`
+```
+curl -X POST http://<machine_IP>:8080/transcribe \
+    -H "Content-Type: application/json" \
+    -d '{"audioPath": "examples/sample_file.mp4", "task": "translate"}'
+```
+

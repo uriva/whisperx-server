@@ -21,6 +21,7 @@ class TranscribeHandler(Resource):
 
         audio_path = transcriptionRequest.get('audioPath')
         output_dir = transcriptionRequest.get('outputDir')
+        task = transcriptionRequest.get('task')
         if audio_path is None:
             return {
                 'message': "'audioPath' key is missing"
@@ -35,18 +36,27 @@ class TranscribeHandler(Resource):
             return {
                 'message': f"the file at path '{audio_path}' was not found"
             }, 404
+        
+        if task is not None and str(task) not in ['translate', 'transcribe']:
+            return {
+                'message': f"the value of task is not valid: '{audio_path}'. Must be one of [translate, transcribe]"
+            }, 404
+
+        if task is None:
+            logging.info('"task" query parameter not provided - using the default \'transcribe\'')
+            task = 'transcribe'
 
         if output_dir is None:
             output_dir = os.path.dirname(os.path.abspath(audio_path))
 
-        logging.info(f"request received [{audio_path} -> {output_dir}]")
+        logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
 
         if worker.isBusy():
             return {
                 'message': f"a video is currently being processed, try again later"
             }, 529
 
-        transcribe_thread = threading.Thread(target=worker.work, name="Transcriber Function", args=[audio_path, output_dir])
+        transcribe_thread = threading.Thread(target=worker.work, name="Transcriber Function", args=[audio_path, output_dir, task])
         transcribe_thread.start()
 
         return {}, 200
