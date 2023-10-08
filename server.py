@@ -3,56 +3,74 @@ import logging
 import os.path
 import threading
 
-from flask import Flask, request
-from flask_restful import Api, Resource
-from waitress import serve
+from aiohttp import web
 
 from whisperx.worker import Worker
 
-app = Flask(__name__)
-api = Api(app)
+
+def _parse_args():
+    parser = argparse.ArgumentParser(description="Process some flags.")
+
+    parser.add_argument(
+        "--device",
+        default=os.environ.get("WHISPER_DEVICE", "cpu"),
+        help="Specify the device (default: cpu)",
+    )
+
+    parser.add_argument(
+        "--torch_threads",
+        type=int,
+        default=int(os.getenv("TORCH_THREADS", 1)),
+        help="Specify the number of Torch threads (default: 1)",
+    )
+
+    parser.add_argument(
+        "--model_size",
+        default=os.environ.get("WHISPER_MODEL", "large-v2"),
+        choices=["small", "medium", "large", "large-v2"],
+        help="Specify the model size (default: large-v2)",
+    )
+    args = parser.parse_args()
+
+    if args.model_size not in ["small", "medium", "large", "large-v2"]:
+        logging.error(
+            "invalid WHISPER_MODEL value. Must be one of ['small', 'medium', 'large', 'large-v2']"
+        )
+    return args.model_size, args.device, args.torch_threads
 
 
-@app.route("/transcribe/")
-class TranscribeHandler(Resource):
-    def post(self):
-        global model
-        transcription_request = request.json
-
-        audio_path = transcription_request.get("audioPath")
-        output_dir = transcription_request.get("outputDir")
-        task = transcription_request.get("task")
-        sync = transcription_request.get("sync")
+def _with_worker(worker):
+    async def handler(request):
+        params = await request.json()
+        audio_path = params.get("audioPath")
+        output_dir = params.get("outputDir")
+        task = params.get("task")
+        sync = params.get("sync")
         if audio_path is None:
-            return {"message": "'audioPath' key is missing"}, 400
-
-        if not str(audio_path):
-            return {"message": "'pathToFile' value is not a string"}, 400
-
-        if not os.path.isfile(audio_path):
-            return {"message": f"the file at path '{audio_path}' was not found"}, 404
-
-        if task is not None and str(task) not in ["translate", "transcribe"]:
-            return {
-                "message": f"the value of task is not valid: '{audio_path}'. Must be one of [translate, transcribe]"
-            }, 404
-
-        if task is None:
-            logging.info(
-                "\"task\" query parameter not provided - using the default 'transcribe'"
+            return web.Response(
+                body={"message": "'audioPath' key is missing"}, status=400
             )
+        if not str(audio_path):
+            return web.Response(
+                body={"message": "'pathToFile' value is not a string"}, status=400
+            )
+        if not os.path.isfile(audio_path):
+            return web.Response(
+                body={"message": f"the file at path '{audio_path}' was not found"},
+                status=404,
+            )
+        if task is not None and str(task) not in ["translate", "transcribe"]:
+            return web.Response(
+                body={
+                    "message": f"Invalid task value [{task}]. Must be one of [translate, transcribe]"
+                },
+                status=404,
+            )
+        if task is None:
             task = "transcribe"
-
         if output_dir is None:
             output_dir = os.path.dirname(os.path.abspath(audio_path))
-
         logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
-
-        if worker.is_busy():
-            return {
-                "message": "a video is currently being processed, try again later"
-            }, 529
-
         transcribe_thread = threading.Thread(
             target=worker.work,
             name="Transcriber Function",
@@ -61,51 +79,12 @@ class TranscribeHandler(Resource):
         transcribe_thread.start()
         if sync:
             transcribe_thread.join()
-        return {}, 200
+        return web.Response(status=200)
 
-
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
-
-parser = argparse.ArgumentParser(description="Process some flags.")
-
-parser.add_argument(
-    "--device",
-    default=os.environ.get("WHISPER_DEVICE", "cpu"),
-    help="Specify the device (default: cpu)",
-)
-
-parser.add_argument(
-    "--torch_threads",
-    type=int,
-    default=int(os.getenv("TORCH_THREADS", 1)),
-    help="Specify the number of Torch threads (default: 1)",
-)
-
-parser.add_argument(
-    "--model_size",
-    default=os.environ.get("WHISPER_MODEL", "large-v2"),
-    choices=["small", "medium", "large", "large-v2"],
-    help="Specify the model size (default: large-v2)",
-)
-
-args = parser.parse_args()
-
-device = args.device
-torch_threads = args.torch_threads
-model_size = args.model_size
-
-if model_size not in ["small", "medium", "large", "large-v2"]:
-    logging.error(
-        "invalid WHISPER_MODEL value. Must be one of ['small', 'medium', 'large', 'large-v2']"
-    )
-
-worker = Worker(model_size, device, torch_threads)
-
-
-api.add_resource(TranscribeHandler, "/transcribe")
+    return handler
 
 
 if __name__ == "__main__":
-    serve(app, host="localhost", port=8080)
+    app = web.Application()
+    app.add_routes([web.post("/transcribe", _with_worker(Worker(*_parse_args())))])
+    web.run_app(app, port=8080)

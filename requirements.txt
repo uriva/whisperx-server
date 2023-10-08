@@ -1,6 +1,4 @@
 ffmpeg-python==0.2.0
-flask
-flask-restful
 more-itertools
 numpy
 pyannote.audio
@@ -9,4 +7,4 @@ torch
 torchaudio
 tqdm
 transformers>=4.19.0
-waitress
+aiohttp

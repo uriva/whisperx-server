@@ -64,7 +64,6 @@ class Worker:
     def __init__(self, model_size, device, torch_threads):
         self._model = _load_model(model_size, device)
         self._device = device
-        self._working_status = False
         torch.set_num_threads(torch_threads)
         logging.info(
             f"initialized worker with device={device}, torch_threads={torch_threads}, model_size={model_size}"
@@ -74,16 +73,10 @@ class Worker:
         return self._working_status
 
     def work(self, audio_path, output_dir, task):
-        if self._working_status:
-            logging.info("Already working! sorry..")
-            return
-
-        self._working_status = True
         try:
             _work_on_file(self._device, self._model, audio_path, output_dir, task)
         except Exception as e:
             logging.error(f"error occurred: {e}")
-        self._working_status = False
 
     # Diarization Code:
     # logging.info("Performing diarization...")
