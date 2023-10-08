@@ -47,23 +47,17 @@ def _with_worker(model):
         task = params.get("task")
         sync = params.get("sync")
         if audio_path is None:
-            return web.Response(
-                body={"message": "'audioPath' key is missing"}, status=400
-            )
+            return web.Response(body="'audioPath' key is missing", status=400)
         if not audio_path:
-            return web.Response(
-                body={"message": "'pathToFile' value is not a string"}, status=400
-            )
+            return web.Response(body="'pathToFile' value is not a string", status=400)
         if not os.path.isfile(audio_path):
             return web.Response(
-                body={"message": f"the file at path '{audio_path}' was not found"},
+                body=f"the file at path '{audio_path}' was not found",
                 status=400,
             )
         if task not in [None, "translate", "transcribe"]:
             return web.Response(
-                body={
-                    "message": f"Invalid task value [{task}]. Must be one of [translate, transcribe]"
-                },
+                body=f"Invalid task value [{task}]. Must be one of [translate, transcribe]",
                 status=400,
             )
         logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
