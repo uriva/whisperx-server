@@ -53,6 +53,7 @@ def work_on_file(model, audio_path, output_dir, task):
         write_srt(result_aligned["segments"], file=srt)
     end = time.time()
     logging.info(f"Processing {audio_path} took {round(end - start)} seconds")
+    return open(os.path.join(output_dir, f"{filename}.srt")).read()
 
 
 def setup_model(model_size, device, num_threads):

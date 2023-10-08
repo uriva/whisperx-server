@@ -76,7 +76,11 @@ def _with_worker(model):
             task or "transcribe",
         )
         if sync:
-            await future
+            try:
+                return web.Response(body=await future, status=200)
+            except Exception as e:
+                logging.error(f"Failed transcribing: {e}")
+                return web.Resource(staus=500)
         return web.Response(status=200)
 
     return handler
