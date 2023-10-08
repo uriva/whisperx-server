@@ -2,6 +2,7 @@ import logging
 import os
 import time
 
+import gamla
 import torch
 
 from . import load_model
@@ -10,6 +11,7 @@ from .transcribe import transcribe
 from .utils import write_srt, write_txt
 
 
+@gamla.throttle(1)
 def work_on_file(model, audio_path, output_dir, task):
     logging.info(f"Will {task} {audio_path} with {model.device}...")
     start = time.time()

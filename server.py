@@ -1,7 +1,7 @@
 import argparse
+import asyncio
 import logging
 import os.path
-import threading
 
 from aiohttp import web
 
@@ -67,24 +67,23 @@ def _with_worker(model):
                 status=400,
             )
         logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
-        transcribe_thread = threading.Thread(
-            target=work_on_file,
-            args=[
-                model,
-                audio_path,
-                output_dir or os.path.dirname(os.path.abspath(audio_path)),
-                task or "transcribe",
-            ],
+        future = asyncio.get_event_loop().run_in_executor(
+            None,
+            work_on_file,
+            model,
+            audio_path,
+            output_dir or os.path.dirname(os.path.abspath(audio_path)),
+            task or "transcribe",
         )
-        transcribe_thread.start()
         if sync:
-            transcribe_thread.join()
+            await future
         return web.Response(status=200)
 
     return handler
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     app = web.Application()
     app.add_routes([web.post("/transcribe", _with_worker(setup_model(*_parse_args())))])
     web.run_app(app, port=8080)

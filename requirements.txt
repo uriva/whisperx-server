@@ -8,3 +8,4 @@ torchaudio
 tqdm
 transformers>=4.19.0
 aiohttp
+gamla
