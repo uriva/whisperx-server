@@ -50,31 +50,31 @@ def _with_worker(worker):
             return web.Response(
                 body={"message": "'audioPath' key is missing"}, status=400
             )
-        if not str(audio_path):
+        if not audio_path:
             return web.Response(
                 body={"message": "'pathToFile' value is not a string"}, status=400
             )
         if not os.path.isfile(audio_path):
             return web.Response(
                 body={"message": f"the file at path '{audio_path}' was not found"},
-                status=404,
+                status=400,
             )
-        if task is not None and str(task) not in ["translate", "transcribe"]:
+        if task not in [None, "translate", "transcribe"]:
             return web.Response(
                 body={
                     "message": f"Invalid task value [{task}]. Must be one of [translate, transcribe]"
                 },
-                status=404,
+                status=400,
             )
-        if task is None:
-            task = "transcribe"
-        if output_dir is None:
-            output_dir = os.path.dirname(os.path.abspath(audio_path))
         logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
         transcribe_thread = threading.Thread(
             target=worker.work,
             name="Transcriber Function",
-            args=[audio_path, output_dir, task],
+            args=[
+                audio_path,
+                output_dir or os.path.dirname(os.path.abspath(audio_path)),
+                task or "transcribe",
+            ],
         )
         transcribe_thread.start()
         if sync:
