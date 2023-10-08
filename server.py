@@ -5,7 +5,7 @@ import threading
 
 from aiohttp import web
 
-from whisperx.worker import Worker
+from whisperx.worker import setup_model, work_on_file
 
 
 def _parse_args():
@@ -39,7 +39,7 @@ def _parse_args():
     return args.model_size, args.device, args.torch_threads
 
 
-def _with_worker(worker):
+def _with_worker(model):
     async def handler(request):
         params = await request.json()
         audio_path = params.get("audioPath")
@@ -68,9 +68,9 @@ def _with_worker(worker):
             )
         logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
         transcribe_thread = threading.Thread(
-            target=worker.work,
-            name="Transcriber Function",
+            target=work_on_file,
             args=[
+                model,
                 audio_path,
                 output_dir or os.path.dirname(os.path.abspath(audio_path)),
                 task or "transcribe",
@@ -86,5 +86,5 @@ def _with_worker(worker):
 
 if __name__ == "__main__":
     app = web.Application()
-    app.add_routes([web.post("/transcribe", _with_worker(Worker(*_parse_args())))])
+    app.add_routes([web.post("/transcribe", _with_worker(setup_model(*_parse_args())))])
     web.run_app(app, port=8080)
