@@ -5,7 +5,7 @@ import os.path
 
 from aiohttp import web
 
-from whisperx.worker import setup_model, work_on_file
+from worker import setup_model, work_on_file
 
 
 def _parse_args():

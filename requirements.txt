@@ -9,3 +9,4 @@ tqdm
 transformers>=4.19.0
 aiohttp
 gamla
+git+https://github.com/m-bain/whisperx.git
