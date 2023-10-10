@@ -32,15 +32,11 @@ def work_on_file(model, audio_path, output_dir, task):
         "task": str(task),
         "verbose": False,
     }
-
     if model.device == "cpu":
         args["fp16"] = False
-
     result = model.transcribe(model, audio_path, temperature=[0], **args)
-
     lan = result["language"]
     logging.info(f"Language of {audio_path} is {lan}")
-
     logging.info(f"Alligning {audio_path}...")
     align_model, align_metadata = load_align_model(lan, model.device)
     result_aligned = align(
@@ -53,7 +49,6 @@ def work_on_file(model, audio_path, output_dir, task):
         start_from_previous=True,
         interpolate_method="nearest",
     )
-    os.makedirs(output_dir, exist_ok=True)
     result = write_srt(result_aligned["segments"])
     end = time.time()
     logging.info(f"Processing {audio_path} took {round(end - start)} seconds")
