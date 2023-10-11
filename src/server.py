@@ -4,7 +4,7 @@ import logging
 import os.path
 
 from aiohttp import web
-
+from whisperx.asr import FasterWhisperPipeline
 from worker import setup_model, work_on_file
 
 
@@ -39,17 +39,13 @@ def _parse_args():
     return args.model_size, args.device, args.torch_threads
 
 
-def _with_worker(model):
+def _with_worker(model: FasterWhisperPipeline):
     async def handler(request):
         params = await request.json()
         audio_path = params.get("audioPath")
-        output_dir = params.get("outputDir")
         task = params.get("task")
-        sync = params.get("sync")
         if audio_path is None:
             return web.Response(body="'audioPath' key is missing", status=400)
-        if not audio_path:
-            return web.Response(body="'pathToFile' value is not a string", status=400)
         if not os.path.isfile(audio_path):
             return web.Response(
                 body=f"the file at path '{audio_path}' was not found",
@@ -60,22 +56,21 @@ def _with_worker(model):
                 body=f"Invalid task value [{task}]. Must be one of [translate, transcribe]",
                 status=400,
             )
-        logging.info(f"request received: {task} [{audio_path} -> {output_dir}]")
-        future = asyncio.get_event_loop().run_in_executor(
-            None,
-            work_on_file,
-            model,
-            audio_path,
-            output_dir or os.path.dirname(os.path.abspath(audio_path)),
-            task or "transcribe",
-        )
-        if sync:
-            try:
-                return web.Response(body=await future, status=200)
-            except Exception as e:
-                logging.error(f"Failed transcribing: {e}")
-                return web.Resource(staus=500)
-        return web.Response(status=200)
+        logging.info(f"request received: {task} {audio_path}")
+        try:
+            return web.Response(
+                body=await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    work_on_file,
+                    model,
+                    audio_path,
+                    task or "transcribe",
+                ),
+                status=200,
+            )
+        except Exception as e:
+            logging.error(f"Failed transcribing: {e}")
+            return web.Resource(staus=500)
 
     return handler
 

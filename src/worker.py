@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from typing import Iterator
 
@@ -7,37 +6,44 @@ import gamla
 import torch
 from whisperx import load_model
 from whisperx.alignment import align, load_align_model
+from whisperx.asr import FasterWhisperPipeline
 from whisperx.utils import format_timestamp
 
 
 def write_srt(transcript: Iterator[dict]) -> str:
     result = ""
     for i, segment in enumerate(transcript, start=1):
-        # write srt lines
-        result += (
-            f"{i}\n"
-            f"{format_timestamp(segment['start'], always_include_hours=True, decimal_marker=',')} --> "
-            f"{format_timestamp(segment['end'], always_include_hours=True, decimal_marker=',')}\n"
-            f"{segment['text'].strip().replace('-->', '->')}\n",
+        result += "\n".join(
+            [
+                str(i),
+                " --> ".join(
+                    [
+                        format_timestamp(
+                            segment["start"],
+                            always_include_hours=True,
+                            decimal_marker=",",
+                        ),
+                        format_timestamp(
+                            segment["end"],
+                            always_include_hours=True,
+                            decimal_marker=",",
+                        ),
+                    ]
+                ),
+                segment["text"].strip().replace("-->", "->"),
+                "",
+            ]
         )
     return result
 
 
 @gamla.throttle(1)
-def work_on_file(model, audio_path, output_dir, task):
+def work_on_file(model: FasterWhisperPipeline, audio_path: str, task: str):
     logging.info(f"Will {task} {audio_path} with {model.device}...")
     start = time.time()
-    args = {
-        "language": None,
-        "task": str(task),
-        "verbose": False,
-    }
-    if model.device == "cpu":
-        args["fp16"] = False
-    result = model.transcribe(model, audio_path, temperature=[0], **args)
+    result = model.transcribe(audio_path, task=str(task))
     lan = result["language"]
     logging.info(f"Language of {audio_path} is {lan}")
-    logging.info(f"Alligning {audio_path}...")
     align_model, align_metadata = load_align_model(lan, model.device)
     result_aligned = align(
         result["segments"],
@@ -45,9 +51,6 @@ def work_on_file(model, audio_path, output_dir, task):
         align_metadata,
         audio_path,
         model.device,
-        extend_duration=2,
-        start_from_previous=True,
-        interpolate_method="nearest",
     )
     result = write_srt(result_aligned["segments"])
     end = time.time()
