@@ -65,6 +65,7 @@ def _with_worker(model: FasterWhisperPipeline):
                     model,
                     audio_path,
                     task or "transcribe",
+                    params.get("language"),
                 ),
                 status=200,
             )

@@ -1,6 +1,5 @@
 import logging
-import time
-from typing import Iterator
+from typing import Iterator, Optional
 
 import gamla
 import torch
@@ -38,24 +37,22 @@ def write_srt(transcript: Iterator[dict]) -> str:
 
 
 @gamla.throttle(1)
-def work_on_file(model: FasterWhisperPipeline, audio_path: str, task: str):
-    logging.info(f"Will {task} {audio_path} with {model.device}...")
-    start = time.time()
-    result = model.transcribe(audio_path, task=str(task))
-    lan = result["language"]
-    logging.info(f"Language of {audio_path} is {lan}")
-    align_model, align_metadata = load_align_model(lan, model.device)
-    result_aligned = align(
-        result["segments"],
-        align_model,
-        align_metadata,
-        audio_path,
-        model.device,
+@gamla.timeit
+def work_on_file(
+    model: FasterWhisperPipeline, audio_path: str, task: str, language: Optional[str]
+):
+    logging.info(f"{task} {audio_path} {model.device} {language}")
+    result = model.transcribe(audio_path, language=language, task=task)
+    align_model, align_metadata = load_align_model(result["language"], model.device)
+    return write_srt(
+        align(
+            result["segments"],
+            align_model,
+            align_metadata,
+            audio_path,
+            model.device,
+        )["segments"]
     )
-    result = write_srt(result_aligned["segments"])
-    end = time.time()
-    logging.info(f"Processing {audio_path} took {round(end - start)} seconds")
-    return result
 
 
 def setup_model(model_size, device, num_threads):
