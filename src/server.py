@@ -52,21 +52,20 @@ def _with_worker(model: FasterWhisperPipeline):
                 status=400,
             )
         logging.info(f"request received: {task} {audio_path}")
-        try:
-            return web.Response(
-                body=await asyncio.get_event_loop().run_in_executor(
-                    None,
-                    work_on_file,
-                    model,
-                    audio_path,
-                    task or "transcribe",
-                    params.get("language"),
-                ),
-                status=200,
-            )
-        except Exception as e:
-            logging.error(f"Failed transcribing: {e}")
+        result = await asyncio.get_event_loop().run_in_executor(
+            None,
+            work_on_file,
+            model,
+            audio_path,
+            task or "transcribe",
+            params.get("language"),
+        )
+        if result is None:
             return web.Resource(staus=500)
+        return web.Response(
+            body=result,
+            status=200,
+        )
 
     return handler
 

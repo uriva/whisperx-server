@@ -42,17 +42,21 @@ def work_on_file(
     model: FasterWhisperPipeline, audio_path: str, task: str, language: Optional[str]
 ):
     logging.info(f"{task} {audio_path} {model.device} {language}")
-    result = model.transcribe(audio_path, language=language, task=task)
-    align_model, align_metadata = load_align_model(result["language"], model.device)
-    return write_srt(
-        align(
-            result["segments"],
-            align_model,
-            align_metadata,
-            audio_path,
-            model.device,
-        )["segments"]
-    )
+    try:
+        result = model.transcribe(audio_path, language=language, task=task)
+        align_model, align_metadata = load_align_model(result["language"], model.device)
+        return write_srt(
+            align(
+                result["segments"],
+                align_model,
+                align_metadata,
+                audio_path,
+                model.device,
+            )["segments"]
+        )
+    except Exception as e:
+        logging.error(e)
+        return None
 
 
 def setup_model(model_size, device, num_threads):
