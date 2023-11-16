@@ -46,11 +46,6 @@ def _with_worker(model: FasterWhisperPipeline):
         task = params.get("task")
         if audio_path is None:
             return web.Response(body="'audioPath' key is missing", status=400)
-        if not os.path.isfile(audio_path):
-            return web.Response(
-                body=f"the file at path '{audio_path}' was not found",
-                status=400,
-            )
         if task not in [None, "translate", "transcribe"]:
             return web.Response(
                 body=f"Invalid task value [{task}]. Must be one of [translate, transcribe]",
@@ -80,4 +75,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     app = web.Application()
     app.add_routes([web.post("/transcribe", _with_worker(setup_model(*_parse_args())))])
-    web.run_app(app, port=8080)
+    web.run_app(app, port=os.environ.get("WHISPERX_PORT"))

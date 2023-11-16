@@ -6,4 +6,6 @@ RUN apt-get install -y ffmpeg && apt-get clean
 # make whisperx download the model
 RUN whisperx examples/sample01.wav --model small --align_model WAV2VEC2_ASR_LARGE_LV60K_960H --batch_size 4;  exit 0
 COPY . .
+EXPOSE 8080
+ENV WHISPERX_PORT=8080
 CMD python src/server.py --torch_threads=1 --model_size=small --device=cuda
