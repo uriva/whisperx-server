@@ -30,13 +30,20 @@ def _parse_args():
         choices=["small", "medium", "large", "large-v2"],
         help="Specify the model size (default: large-v2)",
     )
+
+    parser.add_argument(
+        "--compute_type",
+        default="float16",
+        choices=["float16", "float32", "int8"],
+    )
+
     args = parser.parse_args()
 
     if args.model_size not in ["small", "medium", "large", "large-v2"]:
         logging.error(
             "invalid WHISPER_MODEL value. Must be one of ['small', 'medium', 'large', 'large-v2']"
         )
-    return args.model_size, args.device, args.torch_threads
+    return args.model_size, args.device, args.torch_threads, args.compute_type
 
 
 def _with_worker(model: FasterWhisperPipeline):

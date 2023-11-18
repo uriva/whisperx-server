@@ -59,9 +59,9 @@ def work_on_file(
         return None
 
 
-def setup_model(model_size, device, num_threads):
+def setup_model(model_size: str, device: str, num_threads: int, compute_type: str):
     torch.set_num_threads(num_threads)
     logging.info("loading Whisper model...")
-    model = load_model(model_size, device=device)
+    model = load_model(model_size, device=device, compute_type=compute_type)
     logging.info("Whisper model loaded successfully!")
     return model
