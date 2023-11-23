@@ -2,36 +2,41 @@ import logging
 from typing import Dict
 
 import modal
+from whisperx import load_model
 from whisperx.alignment import align, load_align_model
 
 from src import worker
 
 stub = modal.Stub("whisperx-service")
-_model_version = "large-v2"
-params = (_model_version, "cuda", 1, "float16")
+
 _example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
 
 
-_image = (
-    modal.Image.debian_slim()
-    .apt_install("ffmpeg")
-    .apt_install("git")
-    .pip_install_from_requirements("./requirements.txt")
-    .run_commands(
-        f'whisperx --model {_model_version} "{_example_video_file}"',
-        gpu="any",
-    )
+@stub.function(
+    image=(
+        modal.Image.debian_slim()
+        .apt_install("ffmpeg")
+        .apt_install("git")
+        .pip_install_from_requirements("./requirements.txt")
+        .run_commands(
+            list(
+                map(
+                    lambda version: f'whisperx --model {version} "{_example_video_file}"',
+                    ["tiny", "small", "medium", "large", "large-v2"],
+                )
+            ),
+            gpu="any",
+        )
+    ),
+    gpu="any",
 )
-
-
-@stub.function(image=_image, gpu="any")
 @modal.web_endpoint(method="POST")
 def _transcribe(request: Dict):
     language = request["language"]
     task = request["task"]
     audio_path = request["audio_path"]
 
-    model = worker.setup_model(*params)
+    model = load_model(request["model"], "cuda")
 
     logging.info(f"{task} {audio_path} {model.device} {language}")
     try:

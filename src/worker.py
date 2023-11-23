@@ -2,8 +2,6 @@ import logging
 from typing import Iterator, Optional
 
 import gamla
-import torch
-from whisperx import load_model
 from whisperx.alignment import align, load_align_model
 from whisperx.asr import FasterWhisperPipeline
 from whisperx.utils import format_timestamp
@@ -57,11 +55,3 @@ def work_on_file(
     except Exception as e:
         logging.error(e)
         return None
-
-
-def setup_model(model_size: str, device: str, num_threads: int, compute_type: str):
-    torch.set_num_threads(num_threads)
-    logging.info("loading Whisper model...")
-    model = load_model(model_size, device=device, compute_type=compute_type)
-    logging.info("Whisper model loaded successfully!")
-    return model
