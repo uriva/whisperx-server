@@ -1,12 +1,2 @@
-ffmpeg-python==0.2.0
-more-itertools
-numpy
-pyannote.audio
-soundfile
-torch
-torchaudio
-tqdm
-transformers>=4.19.0
-aiohttp
 gamla
 git+https://github.com/m-bain/whisperx.git@ba30365344618fb9f26575d4d61162154ae50bc9
