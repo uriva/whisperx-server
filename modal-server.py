@@ -11,6 +11,10 @@ stub = modal.Stub("whisperx-service")
 
 _example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
 
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 @stub.function(
     image=(
