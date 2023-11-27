@@ -31,6 +31,7 @@ def write_srt(transcript: Iterator[dict]) -> str:
                 "",
             ]
         )
+    logging.info(result)
     return result
 
 

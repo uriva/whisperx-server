@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
             list(
                 map(
                     lambda version: f'whisperx --model {version} "{_example_video_file}"',
-                    ["tiny", "small", "medium", "large", "large-v2"],
+                    ["tiny", "small", "medium", "large", "large-v2", "large-v3"],
                 )
             ),
             gpu="any",

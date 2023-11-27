@@ -1,2 +1,2 @@
 gamla
-git+https://github.com/m-bain/whisperx.git@ba30365344618fb9f26575d4d61162154ae50bc9
+git+https://github.com/spbisc97/whisperX.git@b4d7b1a422ac3194392febe128a9c6de6f203326
