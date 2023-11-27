@@ -37,22 +37,14 @@ def _transcribe(request: Dict):
     language = request["language"]
     task = request["task"]
     audio_path = request["audio_path"]
-
     model = load_model(request["model"], "cuda")
-
     logging.info(f"{task} {audio_path} {model.device} {language}")
-    try:
-        result = model.transcribe(audio_path, language=language, task=task)
-        align_model, align_metadata = load_align_model(result["language"], model.device)
-        return worker.write_srt(
-            align(
-                result["segments"],
-                align_model,
-                align_metadata,
-                audio_path,
-                model.device,
-            )["segments"]
-        )
-    except Exception as e:
-        logging.error(e)
-        return None
+    result = model.transcribe(audio_path, language=language, task=task)
+    return worker.write_srt(
+        align(
+            result["segments"],
+            *load_align_model(result["language"], model.device),
+            audio_path,
+            model.device,
+        )["segments"]
+    )
