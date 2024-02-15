@@ -23,9 +23,20 @@ _example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
 
 @stub.cls(
     image=(
-        modal.Image.debian_slim()
-        .apt_install("ffmpeg")
+        modal.Image.debian_slim(python_version="3.10")
         .apt_install("git")
+        .pip_install(
+            "git+https://github.com/openai/whisper.git",
+            "dacite",
+            "jiwer",
+            "ffmpeg-python",
+            "gql[all]~=3.0.0a5",
+            "pandas",
+            "loguru==0.6.0",
+            "torchaudio==2.1.0",
+        )
+        .apt_install("ffmpeg")
+        .pip_install("ffmpeg-python")
         .pip_install_from_requirements("./requirements.txt", gpu="any")
         .run_commands(
             f'whisperx --model {_model_size} "{_example_video_file}"', gpu="any"
