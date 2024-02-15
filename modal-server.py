@@ -7,14 +7,18 @@ from src import worker
 
 stub = modal.Stub("whisperx-service")
 
+_model_size = "large-v3"
+
 
 def load_model():
     import whisperx
 
-    return whisperx.load_model("large-v3", "cuda")
+    return whisperx.load_model(_model_size, "cuda")
 
 
 logging.basicConfig(level=logging.INFO)
+
+_example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
 
 
 @stub.cls(
@@ -23,7 +27,9 @@ logging.basicConfig(level=logging.INFO)
         .apt_install("ffmpeg")
         .apt_install("git")
         .pip_install_from_requirements("./requirements.txt", gpu="any")
-        .run_function(load_model, gpu="any")
+        .run_commands(
+            f'whisperx --model {_model_size} "{_example_video_file}"', gpu="any"
+        )
     ),
     gpu="any",
 )
