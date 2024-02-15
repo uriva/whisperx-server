@@ -2,12 +2,11 @@ import logging
 from typing import Iterator, Optional
 
 import gamla
-from whisperx.alignment import align, load_align_model
-from whisperx.asr import FasterWhisperPipeline
-from whisperx.utils import format_timestamp
 
 
 def write_srt(transcript: Iterator[dict]) -> str:
+    from whisperx import utils
+
     result = ""
     for i, segment in enumerate(transcript, start=1):
         result += "\n".join(
@@ -15,12 +14,12 @@ def write_srt(transcript: Iterator[dict]) -> str:
                 str(i),
                 " --> ".join(
                     [
-                        format_timestamp(
+                        utils.format_timestamp(
                             segment["start"],
                             always_include_hours=True,
                             decimal_marker=",",
                         ),
-                        format_timestamp(
+                        utils.format_timestamp(
                             segment["end"],
                             always_include_hours=True,
                             decimal_marker=",",
@@ -35,17 +34,23 @@ def write_srt(transcript: Iterator[dict]) -> str:
     return result
 
 
-@gamla.throttle(1)
 @gamla.timeit
 def work_on_file(
-    model: FasterWhisperPipeline, audio_path: str, task: str, language: Optional[str]
+    model,
+    audio_path: str,
+    task: str,
+    language: Optional[str],
 ):
+    from whisperx import alignment
+
     logging.info(f"{task} {audio_path} {model.device} {language}")
     try:
         result = model.transcribe(audio_path, language=language, task=task)
-        align_model, align_metadata = load_align_model(result["language"], model.device)
+        align_model, align_metadata = alignment.load_align_model(
+            result["language"], model.device
+        )
         return write_srt(
-            align(
+            alignment.align(
                 result["segments"],
                 align_model,
                 align_metadata,
