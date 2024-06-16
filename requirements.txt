@@ -1,2 +1,0 @@
-gamla
-git+https://github.com/spbisc97/whisperX.git@b4d7b1a422ac3194392febe128a9c6de6f203326

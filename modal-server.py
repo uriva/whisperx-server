@@ -5,7 +5,7 @@ import modal
 
 from src import worker
 
-stub = modal.Stub("whisperx-service")
+app = modal.App("whisperx-service")
 
 _model_size = "large-v3"
 
@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 _example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
 
 
-@stub.cls(
+@app.cls(
     image=(
         modal.Image.debian_slim(python_version="3.10")
         .apt_install("git")
@@ -37,7 +37,8 @@ _example_video_file = "https://www2.cs.uic.edu/~i101/SoundFiles/taunt.wav"
         )
         .apt_install("ffmpeg")
         .pip_install("ffmpeg-python")
-        .pip_install_from_requirements("./requirements.txt", gpu="any")
+        .pip_install("gamla")
+        .pip_install("git+https://github.com/m-bain/whisperx.git", gpu="any")
         .run_commands(
             f'whisperx --model {_model_size} "{_example_video_file}"', gpu="any"
         )
